@@ -1,28 +1,41 @@
 <template>
   <div id="app">
-    <img src="./assets/logo.png">
-    <HelloWorld msg="Welcome to Your Vue.js App"/>
+    <IVCurve></IVCurve>
+    <PnL></PnL>
+    <Positions></Positions>
   </div>
 </template>
 
 <script>
-import HelloWorld from "./components/HelloWorld.vue";
+import Positions from './components/Positions.vue'
+import PnL from './components/PnL.vue'
+import IVCurve from './components/IVCurve.vue'
+
+import deribit from './deribit'
 
 export default {
-  name: "app",
+  name: 'app',
   components: {
-    HelloWorld
-  }
-};
+    Positions,
+    PnL,
+    IVCurve,
+  },
+  created() {
+    deribit.connected.then(() => {
+      this.$store.dispatch('getinstruments')
+      this.$store.dispatch('positions')
+    })
+  },
+}
 </script>
 
 <style>
 #app {
-  font-family: "Avenir", Helvetica, Arial, sans-serif;
+  font-family: 'Avenir', Helvetica, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-align: center;
   color: #2c3e50;
-  margin-top: 60px;
+  margin-top: 10px;
 }
 </style>
