@@ -8,6 +8,10 @@ import { Object } from 'core-js'
 
 Vue.use(Vuex)
 
+const Fee = {
+  BTC: 0.0005,
+}
+
 export default new Vuex.Store({
   state: {
     position: {},
@@ -61,6 +65,23 @@ export default new Vuex.Store({
     ATMIV: (state, getters) => (exp, symbol = 'BTC') => {
       let chain = state.symbol[symbol].opt[exp]
       return chain.strike[getters.ATM(exp, symbol)].midIV
+    },
+    Straddle: (state, getters) => (exp, bidask = 'ask', symbol = 'BTC') => {
+      if (!getters.expirations().includes(exp)) {
+        throw new Error(`Unkown expiration - ${exp}`)
+      }
+
+      let chain = state.symbol[symbol].opt[exp]
+      let price = getters.futurePrice(exp, symbol)
+      let atmStrike = getters.ATM(exp, symbol)
+
+      let type = atmStrike >= price ? 'call' : 'put'
+
+      let atmPrice = chain.strike[atmStrike][type][bidask]
+      let atmDiff = Math.abs(atmStrike - price)
+      let fee = 2 * Fee[symbol]
+      fee = bidask === 'bid' ? -fee : fee
+      return 2 * atmPrice * price + atmDiff + fee * price
     },
   },
   mutations: {
@@ -291,6 +312,9 @@ export default new Vuex.Store({
     updExpIV(state, { exp, IV, symbol = 'BTC' }) {
       state.symbol[symbol].opt[exp].IV = IV
     },
+    updExpRange(state, { exp, bid, ask, symbol = 'BTC' }) {
+      state.symbol[symbol].opt[exp].range = { bid, ask }
+    },
   },
   actions: {
     positions({ commit }) {
@@ -342,6 +366,12 @@ export default new Vuex.Store({
       commit('updExp', { exp, symbol })
       commit('updExpATM', { exp, symbol, ATM: getters.ATM(exp, symbol) })
       commit('updExpIV', { exp, symbol, IV: getters.ATMIV(exp, symbol) })
+      commit('updExpRange', {
+        exp,
+        symbol,
+        bid: getters.Straddle(exp, 'bid', symbol),
+        ask: getters.Straddle(exp, 'ask', symbol),
+      })
     },
   },
 })
