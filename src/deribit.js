@@ -8,7 +8,7 @@ let deribit = new Deribit({
 })
 
 deribit.connected.then(() => {
-  deribit.hook('order_book', 'index', msg => {
+  deribit.hook('order_book', msg => {
     if (msg.edp && msg.btc) {
       store.commit('index', { symbol: 'BTC', ind: msg.btc })
       return
@@ -20,7 +20,7 @@ deribit.connected.then(() => {
     }
 
     if (['C', 'P'].includes(msg.instrument.substring(msg.instrument.length - 1))) {
-      store.commit('orderBookOption', msg)
+      store.dispatch('orderBookOption', msg)
     } else {
       store.commit('orderBookFuture', msg)
     }

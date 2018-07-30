@@ -381,6 +381,11 @@ export default new Vuex.Store({
 
       dispatch('updExp', { exp, symbol })
     },
+    orderBookOption({ commit, dispatch }, msg) {
+      commit('orderBookOption', msg)
+      let [symbol, exp] = msg.instrument.split('-')
+      dispatch('updExp', { exp, symbol })
+    },
     updExp({ commit, getters }, { exp, symbol = 'BTC' }) {
       commit('updExp', { exp, price: getters.futurePrice(exp), symbol })
       commit('updExpATM', { exp, symbol, ATM: getters.ATM(exp, symbol) })
