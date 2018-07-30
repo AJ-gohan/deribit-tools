@@ -1,5 +1,6 @@
 <template>
   <div id="app">
+    <Index symbol="BTC"></Index>
     <IVCurve></IVCurve>
     <PnL></PnL>
     <Positions></Positions>
@@ -10,6 +11,7 @@
 import Positions from './components/Positions.vue'
 import PnL from './components/PnL.vue'
 import IVCurve from './components/IVCurve.vue'
+import Index from './components/Index.vue'
 
 import deribit from './deribit'
 
@@ -19,6 +21,7 @@ export default {
     Positions,
     PnL,
     IVCurve,
+    Index,
   },
   created() {
     deribit.connected.then(() => {
