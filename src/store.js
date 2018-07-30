@@ -19,6 +19,10 @@ export default new Vuex.Store({
   },
   getters: {
     expirations: state => (all = false, symbol = 'BTC') => {
+      if (!state.symbol[symbol]) {
+        return []
+      }
+
       if (all) {
         return _.flow(
           _.map(_.pick(['code', 'days'])),
