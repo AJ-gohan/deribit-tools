@@ -91,7 +91,7 @@ export default new Vuex.Store({
         _.uniq,
         _.map(curr => {
           if (!state.symbol[curr]) {
-            state.symbol[curr] = { fut: {}, opt: {}, ind: 0 }
+            Vue.set(state.symbol, curr, { fut: {}, opt: {}, ind: 0 })
           }
         }),
       )(r)
@@ -113,11 +113,10 @@ export default new Vuex.Store({
             ),
           ),
           _.map(exp => {
-            let f = state.symbol[symbol].fut
             let dt = moment(`${exp} 09:00Z`, 'DDMMMYY HH:mmZ')
 
-            if (!f[exp]) {
-              f[exp] = {
+            if (!state.symbol[symbol].fut[exp]) {
+              Vue.set(state.symbol[symbol].fut, exp, {
                 code: exp,
                 date: dt.toDate(),
                 days: moment.duration(dt.diff(moment())).as('days'),
@@ -125,7 +124,7 @@ export default new Vuex.Store({
                 bid: null,
                 ask: null,
                 mid: null,
-              }
+              })
             }
           }),
         )(r)
@@ -153,15 +152,17 @@ export default new Vuex.Store({
 
             let dt = moment(`${exp} 09:00Z`, 'DDMMMYY HH:mmZ')
 
-            state.symbol[symbol].opt[exp] = state.symbol[symbol].opt[exp] || {
-              code: exp,
-              date: dt.toDate(),
-              days: moment.duration(dt.diff(moment())).as('days'),
-              state: null,
-              IV: null,
-              ATM: null,
-              range: { bid: null, ask: null },
-              strike: {},
+            if (!state.symbol[symbol].opt[exp]) {
+              Vue.set(state.symbol[symbol].opt, exp, {
+                code: exp,
+                date: dt.toDate(),
+                days: moment.duration(dt.diff(moment())).as('days'),
+                state: null,
+                IV: null,
+                ATM: null,
+                range: { bid: null, ask: null },
+                strike: {},
+              })
             }
 
             // Strikes
@@ -182,7 +183,7 @@ export default new Vuex.Store({
                   return
                 }
 
-                expAddr[strike] = {
+                Vue.set(expAddr, strike, {
                   strike,
                   bidIV: null,
                   askIV: null,
@@ -214,7 +215,7 @@ export default new Vuex.Store({
                     v: null,
                     t: null,
                   },
-                }
+                })
               }),
             )(r)
           }),
@@ -261,6 +262,9 @@ export default new Vuex.Store({
       i.bid = r.bids[0].price || null
       i.ask = r.asks[0].price || null
       i.mid = i.bid && i.ask ? (i.bid + i.ask) / 2 : i.bid
+    },
+    index(state, { symbol, ind }) {
+      state.symbol[symbol].ind = ind
     },
     positions(state, positions) {
       positions.forEach(one => {
