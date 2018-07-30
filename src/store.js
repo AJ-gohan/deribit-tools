@@ -14,7 +14,7 @@ const Fee = {
 
 export default new Vuex.Store({
   state: {
-    position: {},
+    positions: [],
     symbol: {},
   },
   getters: {
@@ -63,6 +63,11 @@ export default new Vuex.Store({
         _.last,
         _.get('code'),
       )(state.symbol[symbol].fut)
+    },
+    positions: state => (exp, kind = 'option', symbol = 'BTC') => {
+      return state.positions.filter(
+        one => one.instrument.includes(exp) && one.kind == kind,
+      )
     },
     futurePrice: (state, getters) => (exp, symbol = 'BTC') => {
       return state.symbol[symbol].fut[getters.futureCode(exp, symbol)].mid
@@ -282,27 +287,33 @@ export default new Vuex.Store({
       state.symbol[symbol].ind = ind
     },
     positions(state, positions) {
+      state.positions = []
+
       positions.forEach(one => {
         if (one.kind === 'option') {
-          state.position[one.instrument] = {
+          state.positions.push({
             size: one.size,
+            instrument: one.instrument,
+            kind: one.kind,
             avg: one.averagePrice,
             avgUSD: one.averageUsdPrice,
             pnl: one.floatingPl,
             pnlUSD: one.floatingUsdPl,
             td: one.delta,
-          }
+          })
         }
 
         if (one.kind === 'future') {
-          state.position[one.instrument] = {
+          state.positions.push({
             size: one.size,
+            instrument: one.instrument,
+            kind: one.kind,
             avg: one.averagePrice,
             avgUSD: one.averagePrice,
             pnl: one.profitLoss,
             pnlUSD: one.floatingUsdPl,
             td: one.delta,
-          }
+          })
         }
       })
     },
