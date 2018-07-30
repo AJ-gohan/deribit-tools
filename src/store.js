@@ -38,6 +38,17 @@ export default new Vuex.Store({
         )(state.symbol[symbol].opt)
       }
     },
+    strikes: state => (exp, symbol = 'BTC') => {
+      if (!state.symbol[symbol] || !state.symbol[symbol].opt[exp]) {
+        return []
+      }
+
+      return _.flow(
+        Object.keys,
+        _.map(Number),
+        _.sortBy(Number),
+      )(state.symbol[symbol].opt[exp].strike)
+    },
     symbols: state => () => {
       return Object.keys(state.symbol)
     },
@@ -371,7 +382,7 @@ export default new Vuex.Store({
       dispatch('updExp', { exp, symbol })
     },
     updExp({ commit, getters }, { exp, symbol = 'BTC' }) {
-      commit('updExp', { exp, symbol })
+      commit('updExp', { exp, price: getters.futurePrice(exp), symbol })
       commit('updExpATM', { exp, symbol, ATM: getters.ATM(exp, symbol) })
       commit('updExpIV', { exp, symbol, IV: getters.ATMIV(exp, symbol) })
       commit('updExpRange', {
