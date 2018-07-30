@@ -1,9 +1,9 @@
 <template>
   <div id="app">
     <!-- <Index symbol="BTC"></Index> -->
-    <IVCurve expiration="28DEC18"></IVCurve>
-    <!-- <PnL></PnL>
-    <Positions></Positions> -->
+    <!-- <IVCurve expiration="28DEC18"></IVCurve> -->
+    <PnL></PnL>
+    <!-- <Positions></Positions> -->
   </div>
 </template>
 
