@@ -2,11 +2,15 @@
   <div>
     {{ error }}
     <span>Exp: <select v-model="exp">
+        <option value="all">all</option>
         <option v-for="one in expirations()" v-bind:key="one" v-bind:value="one">
           {{ one }}
         </option>
       </select>
-      Days: <input v-model="days" placeholder="days to expiration">
+      after <input v-model="days"> days
+       <button v-on:click="days += 1">+1</button>
+       <button v-on:click="days -= 1">-1</button>
+       <button v-on:click="days = 0">0</button>
     </span>
     <div id="pnl"></div>
   </div>
@@ -21,6 +25,7 @@ import Chartist from 'chartist'
 import Tooltip from 'chartist-plugin-tooltip'
 import { price as BSPrice } from '../bs'
 import _ from 'lodash/fp'
+import zip from 'lodash/zip'
 
 export default {
   name: 'PnL',
@@ -28,8 +33,8 @@ export default {
   data: function() {
     return {
       error: null,
-      exp: null,
       days: null,
+      exp: null,
       chartOptions: {
         fullWidth: true,
         lineSmooth: false,
@@ -37,51 +42,71 @@ export default {
         chartPadding: {
           right: 40,
         },
-        plugins: [Tooltip()],
       },
     }
   },
   computed: {
     ...mapGetters(['expirations', 'strikes', 'futurePrice', 'positions', 'ATMIV']),
-    ...mapState({
-      data(state) {
-        let symbol = this.symbol || 'BTC'
-        let expiration = this.exp
+    // ...mapState({}),
+  },
+  methods: {
+    data: function(st) {
+      let state = this.$store.state
 
-        if (!expiration) return {}
+      let symbol = this.symbol || 'BTC'
+      let expirations = this.exp === 'all' ? this.expirations() : [this.exp]
 
-        let expObj = state.symbol[symbol].opt[expiration]
-        // let future = this.futurePrice(expiration)
-        let strikes = this.strikes(expiration)
+      let allStrikes = _.flow(
+        _.map(exp => this.strikes(exp)),
+        _.flatten,
+        _.uniq,
+        _.sortBy(Number),
+      )(expirations)
 
-        return {
-          labels: strikes,
-          series: [
-            strikes.map(strike => {
-              return _.flow(
-                _.sumBy(p => {
-                  let [symbol, exp, pStrike, callPut] = p.instrument.split('-')
+      let r = _.flow(
+        _.map(exp => {
+          let expObj = state.symbol[symbol].opt[exp]
+          let positions = this.positions(exp)
+          let ATMIV = this.ATMIV(exp)
 
-                  // pUsd = BSPrice(opt.type, rate, strike, exdays, iv, ir);
+          let days = expObj.days && expObj.days > this.days ? expObj.days - this.days : 0
 
-                  let optPrice =
-                    +pStrike === strike
-                      ? 0
-                      : BSPrice(callPut === 'C' ? 'call' : 'put', strike, +pStrike, 0, 60)
+          return allStrikes.map(strike => {
+            return _.flow(
+              _.sumBy(p => {
+                let [symbol, exp, pStrike, callPut] = p.instrument.split('-')
 
-                  return (optPrice - p.avgUSD) * p.size
-                }),
-                Math.round,
-              )(this.positions(expiration))
-            }),
-          ],
-        }
-      },
-    }),
+                // pUsd = BSPrice(opt.type, rate, strike, exdays, iv, ir);
+                let price =
+                  BSPrice(
+                    callPut === 'C' ? 'call' : 'put',
+                    strike,
+                    +pStrike,
+                    days,
+                    ATMIV,
+                  ) || 0
+
+                return (price - p.avgUSD) * p.size
+              }),
+            )(positions)
+          })
+        }),
+      )(expirations)
+
+      r = this.exp === 'all' ? _.map(_.sum, zip(...r)) : r[0]
+
+      return {
+        labels: allStrikes,
+        series: [r],
+      }
+    },
   },
   watch: {
-    data: function(data) {
-      this.chart = new Chartist.Line('#pnl', data, this.chartOptions)
+    exp: function() {
+      this.chart = new Chartist.Line('#pnl', this.data(), this.chartOptions)
+    },
+    days: function() {
+      this.chart = new Chartist.Line('#pnl', this.data(), this.chartOptions)
     },
   },
 }
