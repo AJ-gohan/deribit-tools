@@ -1,16 +1,21 @@
 <template>
   <div>
     {{ error }}
-    <span>Exp: <select v-model="exp">
+    <span>
+      With futures: <input type="checkbox" id="futures" v-model="futures">
+      Exp: <select v-model="exp">
         <option value="all">all</option>
         <option v-for="one in expirations()" v-bind:key="one" v-bind:value="one">
           {{ one }}
         </option>
       </select>
-      after <input v-model="days"> days
-       <button v-on:click="days += 1">+1</button>
+      after {{ days }} days ( {{ Math.round(daysExp - days) }} to exp)
+       <button v-on:click="days = 0">now</button>
        <button v-on:click="days -= 1">-1</button>
-       <button v-on:click="days = 0">0</button>
+       <button v-on:click="days += 1">+1</button>
+       <button v-on:click="days = Math.ceil(daysExp)">exp</button>
+       Pnl at <input v-model="level" placeholder="level">
+       +/- <input v-model="spread" placeholder="spread">
     </span>
     <div id="pnl"></div>
   </div>
@@ -34,15 +39,11 @@ export default {
     return {
       error: null,
       days: null,
+      level: 0,
+      futures: true,
+      spread: 100000,
+      daysExp: 0,
       exp: null,
-      chartOptions: {
-        fullWidth: true,
-        lineSmooth: false,
-        height: 500,
-        chartPadding: {
-          right: 40,
-        },
-      },
     }
   },
   computed: {
@@ -50,6 +51,21 @@ export default {
     // ...mapState({}),
   },
   methods: {
+    draw: function() {
+      this.chart = new Chartist.Line('#pnl', this.data(), this.opts())
+    },
+    opts: function() {
+      return {
+        fullWidth: true,
+        lineSmooth: false,
+        height: 500,
+        high: Math.round(this.level) + Math.round(this.spread),
+        low: Math.round(this.level) - Math.round(this.spread),
+        chartPadding: {
+          right: 40,
+        },
+      }
+    },
     data: function(st) {
       let state = this.$store.state
 
@@ -62,6 +78,8 @@ export default {
         _.uniq,
         _.sortBy(Number),
       )(expirations)
+
+      let posFut = this.positions(null, 'future')
 
       let r = _.flow(
         _.map(exp => {
@@ -95,6 +113,16 @@ export default {
 
       r = this.exp === 'all' ? _.map(_.sum, zip(...r)) : r[0]
 
+      if (this.futures) {
+        r.forEach((pnl, i) => {
+          r[i] =
+            r[i] +
+            _.sumBy(pos => {
+              return 10 * pos.size * (1 / pos.avg - 1 / allStrikes[i]) * allStrikes[i]
+            }, posFut)
+        })
+      }
+
       return {
         labels: allStrikes,
         series: [r],
@@ -102,11 +130,24 @@ export default {
     },
   },
   watch: {
-    exp: function() {
-      this.chart = new Chartist.Line('#pnl', this.data(), this.chartOptions)
+    exp: function(exp) {
+      if (exp === 'all') {
+        this.daysExp = 30
+      } else {
+        this.daysExp = this.$store.state.symbol.BTC.opt[exp].days
+        if (this.days > this.daysExp) {
+          this.days = Math.ceil(this.daysExp)
+        }
+      }
+
+      this.draw()
     },
-    days: function() {
-      this.chart = new Chartist.Line('#pnl', this.data(), this.chartOptions)
+    days: function(days) {
+      if (days < 0) this.days = 0
+      this.draw()
+    },
+    futures: function() {
+      this.draw()
     },
   },
 }

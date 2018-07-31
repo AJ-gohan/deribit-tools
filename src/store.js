@@ -65,6 +65,10 @@ export default new Vuex.Store({
       )(state.symbol[symbol].fut)
     },
     positions: state => (exp, kind = 'option', symbol = 'BTC') => {
+      if (!exp) {
+        return state.positions.filter(one => one.kind == kind)
+      }
+
       return state.positions.filter(
         one => one.instrument.includes(exp) && one.kind == kind,
       )
