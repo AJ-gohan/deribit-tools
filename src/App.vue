@@ -1,5 +1,10 @@
 <template>
   <div id="app">
+    <div v-if="!credentialsSet">
+      <input v-model="key" placeholder="Deribit key">
+      <input v-model="secret" placeholder="Deribit secret">
+      <button v-on:click="credentials()">Set credentials</button>
+    </div>
     <!-- <Index symbol="BTC"></Index> -->
     <!-- <IVCurve expiration="28DEC18"></IVCurve> -->
     <PnL></PnL>
@@ -23,11 +28,48 @@ export default {
     IVCurve,
     Index,
   },
+  data: function() {
+    return {
+      credentialsSet: false,
+      key: null,
+      secret: null,
+    }
+  },
   created() {
+    let store = this.$store
     deribit.connected.then(() => {
-      this.$store.dispatch('getinstruments')
-      this.$store.dispatch('positions')
+      store.dispatch('getinstruments')
+
+      deribit.hook('order_book', msg => {
+        if (msg.edp && msg.btc) {
+          store.commit('index', { symbol: 'BTC', ind: msg.btc })
+          return
+        }
+
+        if (!msg.instrument) {
+          console.error('Missing instrument', msg)
+          return
+        }
+
+        if (['C', 'P'].includes(msg.instrument.substring(msg.instrument.length - 1))) {
+          store.dispatch('orderBookOption', msg)
+        } else {
+          store.commit('orderBookFuture', msg)
+        }
+      })
     })
+  },
+  methods: {
+    credentials: function() {
+      deribit.opt.key = this.key
+      deribit.opt.secret = this.secret
+      this.credentialsSet = true
+
+      let store = this.$store
+      deribit.connected.then(() => {
+        store.dispatch('positions')
+      })
+    },
   },
 }
 </script>

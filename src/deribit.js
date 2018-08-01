@@ -7,24 +7,4 @@ let deribit = new Deribit({
   secret: process.env.VUE_APP_DERIBIT_SECRET,
 })
 
-deribit.connected.then(() => {
-  deribit.hook('order_book', msg => {
-    if (msg.edp && msg.btc) {
-      store.commit('index', { symbol: 'BTC', ind: msg.btc })
-      return
-    }
-
-    if (!msg.instrument) {
-      console.error('Missing instrument', msg)
-      return
-    }
-
-    if (['C', 'P'].includes(msg.instrument.substring(msg.instrument.length - 1))) {
-      store.dispatch('orderBookOption', msg)
-    } else {
-      store.commit('orderBookFuture', msg)
-    }
-  })
-})
-
 export default deribit
