@@ -6,14 +6,12 @@
       <button v-on:click="credentials()">Set credentials</button>
     </div>
     <!-- <Index symbol="BTC"></Index> -->
-    <!-- <IVCurve expiration="28DEC18"></IVCurve> -->
+    <IVCurve expiration="28DEC18"></IVCurve>
     <PnL></PnL>
-    <!-- <Positions></Positions> -->
   </div>
 </template>
 
 <script>
-import Positions from './components/Positions.vue'
 import PnL from './components/PnL.vue'
 import IVCurve from './components/IVCurve.vue'
 import Index from './components/Index.vue'
@@ -23,7 +21,6 @@ import deribit from './deribit'
 export default {
   name: 'app',
   components: {
-    Positions,
     PnL,
     IVCurve,
     Index,
@@ -68,6 +65,9 @@ export default {
       let store = this.$store
       deribit.connected.then(() => {
         store.dispatch('positions')
+        deribit.hook('my_trade', () => {
+          store.dispatch('positions')
+        })
       })
     },
   },
