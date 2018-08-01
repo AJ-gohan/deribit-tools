@@ -14,8 +14,8 @@
        <button v-on:click="days -= 1">-1</button>
        <button v-on:click="days += 1">+1</button>
        <button v-on:click="days = Math.ceil(daysExp)">exp</button>
-       Pnl at <input v-model="level" placeholder="level">
-       +/- <input v-model="spread" placeholder="spread">
+       Pnl at <input v-model="level" placeholder="level" v-on:input="draw()"> <button v-on:click="level = 0">0</button>
+       +/- <input v-model="spread" placeholder="spread" v-on:input="draw()"> <button v-on:click="spread = max"> {{ max }} </button> <button v-on:click="spread = 10000"> 10K </button>
     </span>
     <div id="pnl"></div>
   </div>
@@ -42,6 +42,7 @@ export default {
       level: 0,
       futures: true,
       spread: 100000,
+      max: 100000,
       daysExp: 0,
       exp: null,
     }
@@ -52,6 +53,9 @@ export default {
   },
   methods: {
     draw: function() {
+      let data = this.data()
+      this.max = Math.round(Math.max(...data.series[0].map(Math.abs)))
+      this.spread = this.spread > this.max ? this.max : this.spread
       this.chart = new Chartist.Line('#pnl', this.data(), this.opts())
     },
     opts: function() {
@@ -147,6 +151,9 @@ export default {
       this.draw()
     },
     futures: function() {
+      this.draw()
+    },
+    spread: function() {
       this.draw()
     },
   },
