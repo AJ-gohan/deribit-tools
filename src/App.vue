@@ -1,36 +1,28 @@
 <template>
   <div id="app">
-    <div v-if="!credentialsSet">
-      <input v-model="key" placeholder="Deribit key">
-      <input v-model="secret" placeholder="Deribit secret">
-      <button v-on:click="credentials()">Set credentials</button>
-    </div>
-    <!-- <Index symbol="BTC"></Index> -->
-    <IVCurve expiration="28DEC18"></IVCurve>
-    <PnL></PnL>
+    <router-link to="/iv">IV</router-link> | <router-link to="/pnl">PnL</router-link>
+    <router-view></router-view>
   </div>
 </template>
 
 <script>
+import VueRouter from 'vue-router'
 import PnL from './components/PnL.vue'
 import IVCurve from './components/IVCurve.vue'
 import Index from './components/Index.vue'
 
 import deribit from './deribit'
 
+const routes = [{ path: '/pnl', component: PnL }, { path: '/iv', component: IVCurve }]
+const router = new VueRouter({ routes })
+
 export default {
   name: 'app',
+  router,
   components: {
     PnL,
     IVCurve,
     Index,
-  },
-  data: function() {
-    return {
-      credentialsSet: false,
-      key: null,
-      secret: null,
-    }
   },
   created() {
     let store = this.$store
@@ -55,21 +47,6 @@ export default {
         }
       })
     })
-  },
-  methods: {
-    credentials: function() {
-      deribit.opt.key = this.key
-      deribit.opt.secret = this.secret
-      this.credentialsSet = true
-
-      let store = this.$store
-      deribit.connected.then(() => {
-        store.dispatch('positions')
-        deribit.hook('my_trade', () => {
-          store.dispatch('positions')
-        })
-      })
-    },
   },
 }
 </script>

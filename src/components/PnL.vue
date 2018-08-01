@@ -1,6 +1,11 @@
 <template>
   <div>
     {{ error }}
+    <div v-if="!credentialsSet">
+      <input v-model="key" placeholder="Deribit key">
+      <input v-model="secret" placeholder="Deribit secret">
+      <button v-on:click="credentials()">Set credentials</button>
+    </div>
     <span>
       With futures: <input type="checkbox" id="futures" v-model="futures">
       Exp: <select v-model="exp">
@@ -27,6 +32,7 @@
 
 import { mapState, mapGetters } from 'vuex'
 import Chartist from 'chartist'
+import deribit from '../deribit'
 import Tooltip from 'chartist-plugin-tooltip'
 import { price as BSPrice } from '../bs'
 import _ from 'lodash/fp'
@@ -37,6 +43,9 @@ export default {
   props: ['symbol'],
   data: function() {
     return {
+      credentialsSet: false,
+      key: null,
+      secret: null,
       error: null,
       days: null,
       level: 0,
@@ -52,6 +61,19 @@ export default {
     // ...mapState({}),
   },
   methods: {
+    credentials: function() {
+      deribit.opt.key = this.key
+      deribit.opt.secret = this.secret
+      this.credentialsSet = true
+
+      let store = this.$store
+      deribit.connected.then(() => {
+        store.dispatch('positions')
+        deribit.hook('my_trade', () => {
+          store.dispatch('positions')
+        })
+      })
+    },
     draw: function() {
       let data = this.data()
       this.max = Math.round(Math.max(...data.series[0].map(Math.abs)))
