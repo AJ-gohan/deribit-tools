@@ -70,7 +70,7 @@ export default {
       deribit.connected.then(() => {
         store.dispatch('positions')
         deribit.hook('my_trade', () => {
-          store.dispatch('positions')
+          store.dispatch('positions').then(() => this.draw())
         })
       })
     },
