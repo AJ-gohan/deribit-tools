@@ -359,10 +359,10 @@ export default new Vuex.Store({
         .action('getinstruments')
         .then(r => commit('getinstruments', r))
         .then(() => {
-          getters.symbols().forEach(symbol => {
-            getters
-              .expirations(false, symbol)
-              .forEach(exp => dispatch('initExp', { exp, symbol }))
+          return getters.symbols().map(symbol => {
+            return Promise.map(getters.expirations(false, symbol), exp => {
+              return dispatch('initExp', { exp, symbol })
+            })
           })
         })
     },
@@ -375,26 +375,22 @@ export default new Vuex.Store({
 
       let strikes = Object.keys(state.symbol[symbol].opt[exp].strike)
 
-      await Promise.map(
-        strikes,
-        strike => {
-          return Promise.all([
-            deribit
-              .action('getorderbook', {
-                instrument: `${symbol}-${exp}-${strike}-C`,
-              })
-              .then(r => commit('orderBookOption', r)),
-            deribit
-              .action('getorderbook', {
-                instrument: `${symbol}-${exp}-${strike}-P`,
-              })
-              .then(r => commit('orderBookOption', r)),
-          ])
-        },
-        { concurrency: 2 },
-      )
-
-      dispatch('updExp', { exp, symbol })
+      return Promise.map(strikes, strike => {
+        return Promise.all([
+          deribit
+            .action('getorderbook', {
+              instrument: `${symbol}-${exp}-${strike}-C`,
+            })
+            .then(r => commit('orderBookOption', r)),
+          deribit
+            .action('getorderbook', {
+              instrument: `${symbol}-${exp}-${strike}-P`,
+            })
+            .then(r => commit('orderBookOption', r)),
+        ])
+      }).then(() => {
+        dispatch('updExp', { exp, symbol })
+      })
     },
     orderBookOption({ commit, dispatch }, msg) {
       commit('orderBookOption', msg)

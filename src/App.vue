@@ -27,24 +27,24 @@ export default {
   created() {
     let store = this.$store
     deribit.connected.then(() => {
-      store.dispatch('getinstruments')
+      store.dispatch('getinstruments').then(() => {
+        deribit.hook('order_book', msg => {
+          if (msg.edp && msg.btc) {
+            store.commit('index', { symbol: 'BTC', ind: msg.btc })
+            return
+          }
 
-      deribit.hook('order_book', msg => {
-        if (msg.edp && msg.btc) {
-          store.commit('index', { symbol: 'BTC', ind: msg.btc })
-          return
-        }
+          if (!msg.instrument) {
+            console.error('Missing instrument', msg)
+            return
+          }
 
-        if (!msg.instrument) {
-          console.error('Missing instrument', msg)
-          return
-        }
-
-        if (['C', 'P'].includes(msg.instrument.substring(msg.instrument.length - 1))) {
-          store.dispatch('orderBookOption', msg)
-        } else {
-          store.commit('orderBookFuture', msg)
-        }
+          if (['C', 'P'].includes(msg.instrument.substring(msg.instrument.length - 1))) {
+            store.dispatch('orderBookOption', msg)
+          } else {
+            store.commit('orderBookFuture', msg)
+          }
+        })
       })
     })
   },
