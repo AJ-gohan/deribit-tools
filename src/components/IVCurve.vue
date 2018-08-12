@@ -14,6 +14,7 @@
 <script>
 import { mapState, mapGetters } from 'vuex'
 import Chartist from 'chartist'
+import _ from 'lodash/fp'
 
 export default {
   name: 'IVCurve',
@@ -33,6 +34,11 @@ export default {
         },
       },
     }
+  },
+  created() {
+    this.draw = _.debounce(100, () => {
+      this.chart = new Chartist.Line('#ivcurve', this.data, this.chartOptions)
+    })
   },
   computed: {
     ...mapGetters(['expirations', 'strikes']),
@@ -68,8 +74,8 @@ export default {
     }),
   },
   watch: {
-    data: function(data) {
-      this.chart = new Chartist.Line('#ivcurve', data, this.chartOptions)
+    data: function() {
+      this.draw()
     },
   },
 }
