@@ -6,7 +6,7 @@
     "serve": "vue-cli-service serve",
     "build": "vue-cli-service build",
     "lint": "vue-cli-service lint",
-    "s3": "aws-keychain exec me aws s3 sync --delete --acl=public-read ./dist s3://deribit.vagroup.fund/"
+    "s3": "aws-keychain exec me aws s3 sync --delete --acl=public-read ./dist s3://deribit.vagroup.fund/ --metadata-directive REPLACE --cache-control no-cache"
   },
   "dependencies": {
     "bluebird": "^3.5.1",

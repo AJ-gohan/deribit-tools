@@ -56,6 +56,18 @@ export default {
       exp: null,
     }
   },
+  mounted() {
+    if (localStorage.deribit_key) {
+      this.key = localStorage.deribit_key
+    }
+    if (localStorage.deribit_secret) {
+      this.secret = localStorage.deribit_secret
+    }
+
+    if (this.key && this.secret) {
+      this.credentials()
+    }
+  },
   computed: {
     ...mapGetters(['expirations', 'strikes', 'futurePrice', 'positions', 'ATMIV']),
     // ...mapState({}),
@@ -64,6 +76,10 @@ export default {
     credentials: function() {
       deribit.opt.key = this.key
       deribit.opt.secret = this.secret
+
+      localStorage.deribit_key = this.key
+      localStorage.deribit_secret = this.secret
+
       this.credentialsSet = true
 
       let store = this.$store
