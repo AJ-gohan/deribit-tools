@@ -28,6 +28,11 @@ export default {
     let store = this.$store
     deribit.connected.then(() => {
       store.dispatch('getinstruments').then(() => {
+        store.dispatch('greeks')
+        setInterval(function() {
+          store.dispatch('greeks')
+        }, 5000)
+
         deribit.hook('order_book', msg => {
           if (msg.edp && msg.btc) {
             store.commit('index', { symbol: 'BTC', ind: msg.btc })

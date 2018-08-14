@@ -13,6 +13,7 @@
     "chartist": "^0.11.0",
     "chartist-plugin-tooltip": "^0.0.11",
     "deribit-ws-js": "^3.1.0",
+    "greeks": "^1.0.0",
     "jquery": "^3.3.1",
     "moment": "^2.22.2",
     "vue": "^2.5.16",

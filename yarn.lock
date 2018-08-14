@@ -1300,6 +1300,10 @@ binary-extensions@^1.0.0:
   version "1.11.0"
   resolved "https://registry.yarnpkg.com/binary-extensions/-/binary-extensions-1.11.0.tgz#46aa1751fb6a2f93ee5e689bb1087d4b14c6c205"
 
+black-scholes@1.1.0:
+  version "1.1.0"
+  resolved "https://registry.yarnpkg.com/black-scholes/-/black-scholes-1.1.0.tgz#2db77cfaf48ff9dae0d5d03693aeb02ef22f9b09"
+
 bluebird@^3.1.1, bluebird@^3.5.1:
   version "3.5.1"
   resolved "https://registry.yarnpkg.com/bluebird/-/bluebird-3.5.1.tgz#d9551f9de98f1fcda1e683d17ee91a0602ee2eb9"
@@ -3193,6 +3197,12 @@ globby@^8.0.1:
 graceful-fs@^4.1.11, graceful-fs@^4.1.2, graceful-fs@^4.1.6:
   version "4.1.11"
   resolved "https://registry.yarnpkg.com/graceful-fs/-/graceful-fs-4.1.11.tgz#0e8bdfe4d1ddb8854d64e04ea7c00e2a026e5658"
+
+greeks@^1.0.0:
+  version "1.0.0"
+  resolved "https://registry.yarnpkg.com/greeks/-/greeks-1.0.0.tgz#7fce8de8f1b014ec8ab2a5cc01aa9d14b69bfe29"
+  dependencies:
+    black-scholes "1.1.0"
 
 gzip-size@^4.1.0:
   version "4.1.0"

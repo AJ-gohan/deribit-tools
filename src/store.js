@@ -5,6 +5,7 @@ import _ from 'lodash/fp'
 import moment from 'moment'
 import Promise from 'bluebird'
 import { Object } from 'core-js'
+import greeks from 'greeks'
 
 Vue.use(Vuex)
 
@@ -106,6 +107,46 @@ export default new Vuex.Store({
       let fee = 2 * Fee[symbol]
       fee = bidask === 'bid' ? -fee : fee
       return 2 * atmPrice * price + atmDiff + fee * price
+    },
+    delta: (state, getters) => (exp, kind = 'all', symbol = 'BTC') => {
+      let posOptions
+      let posFutures
+
+      if (exp === 'all' || !exp) {
+        posOptions = ['all', 'option'].includes(kind) ? getters.positions() : []
+        posFutures = ['all', 'future'].includes(kind)
+          ? getters.positions(null, 'future')
+          : []
+      } else {
+        posOptions = ['all', 'option'].includes(kind) ? getters.positions(exp) : []
+        posFutures = ['all', 'future'].includes(kind)
+          ? getters.positions(exp, 'future')
+          : []
+      }
+
+      let deltaOptions = _.flow(
+        _.filter(p => p.instrument.includes(symbol)),
+        _.map(position => {
+          let t = position.instrument.split('-')
+          let type = t[3] === 'C' ? 'call' : 'put'
+          return state.symbol[symbol].opt[t[1]].strike[t[2]][type].d * position.size
+        }),
+        _.sum,
+      )(posOptions)
+
+      let deltaFutures = _.flow(
+        _.filter(p => p.instrument.includes(symbol)),
+        _.map(position => {
+          let t = position.instrument.split('-')
+          let tmpExp = t[1]
+          let price = getters.futurePrice(tmpExp)
+
+          return (position.size * 10) / price
+        }),
+        _.sum,
+      )(posFutures)
+
+      return deltaOptions + deltaFutures
     },
   },
   mutations: {
@@ -245,6 +286,25 @@ export default new Vuex.Store({
           }),
         )(r)
       })(Object.keys(state.symbol))
+    },
+    greeks: (state, { symbol, prices }) => {
+      Object.keys(state.symbol[symbol].opt).forEach(exp => {
+        Object.keys(state.symbol[symbol].opt[exp].strike).forEach(strike => {
+          let price = prices[exp]
+          let addr = state.symbol[symbol].opt[exp].strike[strike]
+          let time = state.symbol[symbol].opt[exp].days / 365
+          let iv = state.symbol[symbol].opt[exp].strike[strike].midIV / 100
+
+          addr.call.d = greeks.getDelta(price, strike, time, iv, 0, 'call')
+          addr.put.d = greeks.getDelta(price, strike, time, iv, 0, 'put')
+
+          addr.call.t = greeks.getTheta(price, strike, time, iv, 0, 'call')
+          addr.put.t = greeks.getTheta(price, strike, time, iv, 0, 'put')
+
+          addr.call.g = addr.put.g = greeks.getGamma(price, strike, time, iv, 0)
+          addr.call.v = addr.put.v = greeks.getVega(price, strike, time, iv, 0)
+        })
+      })
     },
     orderBookOption(state, r) {
       let addr = state.symbol
@@ -396,6 +456,18 @@ export default new Vuex.Store({
       commit('orderBookOption', msg)
       let [symbol, exp] = msg.instrument.split('-')
       dispatch('updExp', { exp, symbol })
+    },
+
+    greeks({ state, commit, getters }) {
+      Object.keys(state.symbol).forEach(symbol => {
+        let prices = {}
+
+        Object.keys(state.symbol[symbol].opt).forEach(
+          exp => (prices[exp] = getters.futurePrice(exp)),
+        )
+
+        commit('greeks', { symbol, prices })
+      })
     },
     updExp({ commit, getters }, { exp, symbol = 'BTC' }) {
       commit('updExp', { exp, price: getters.futurePrice(exp), symbol })

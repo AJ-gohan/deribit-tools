@@ -21,6 +21,8 @@
        <button v-on:click="days = Math.ceil(daysExp)">exp</button>
        Pnl at <input v-model="level" placeholder="level" v-on:input="draw()"> <button v-on:click="level = 0">0</button>
        +/- <input v-model="spread" placeholder="spread" v-on:input="draw()"> <button v-on:click="spread = max"> {{ max }} </button> <button v-on:click="spread = 10000"> 10K </button>
+
+       Delta: {{ delta(exp) | decimal }} (opt:{{ delta(exp, 'option') | decimal }}, fut:{{ delta(exp, 'future') | decimal }})
     </span>
     <div id="pnl"></div>
   </div>
@@ -56,6 +58,11 @@ export default {
       exp: null,
     }
   },
+  filters: {
+    decimal: function(value) {
+      return Math.round(value * 100) / 100
+    },
+  },
   mounted() {
     if (localStorage.deribit_key) {
       this.key = localStorage.deribit_key
@@ -69,7 +76,14 @@ export default {
     }
   },
   computed: {
-    ...mapGetters(['expirations', 'strikes', 'futurePrice', 'positions', 'ATMIV']),
+    ...mapGetters([
+      'expirations',
+      'strikes',
+      'futurePrice',
+      'positions',
+      'ATMIV',
+      'delta',
+    ]),
     // ...mapState({}),
   },
   methods: {
