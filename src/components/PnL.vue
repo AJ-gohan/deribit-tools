@@ -1,11 +1,5 @@
 <template>
   <div>
-    {{ error }}
-    <div v-if="!credentialsSet">
-      <input v-model="key" placeholder="Deribit key">
-      <input v-model="secret" placeholder="Deribit secret">
-      <button v-on:click="credentials()">Set credentials</button>
-    </div>
     <span>
       With futures: <input type="checkbox" id="futures" v-model="futures">
       Exp: <select v-model="exp">
@@ -45,10 +39,6 @@ export default {
   props: ['symbol'],
   data: function() {
     return {
-      credentialsSet: false,
-      key: null,
-      secret: null,
-      error: null,
       days: null,
       level: 0,
       futures: true,
@@ -63,18 +53,6 @@ export default {
       return Math.round(value * 100) / 100
     },
   },
-  mounted() {
-    if (localStorage.deribit_key) {
-      this.key = localStorage.deribit_key
-    }
-    if (localStorage.deribit_secret) {
-      this.secret = localStorage.deribit_secret
-    }
-
-    if (this.key && this.secret) {
-      this.credentials()
-    }
-  },
   computed: {
     ...mapGetters([
       'expirations',
@@ -84,27 +62,15 @@ export default {
       'ATMIV',
       'delta',
     ]),
-    // ...mapState({}),
+    ...mapState(['readyState']),
   },
   methods: {
-    credentials: function() {
-      deribit.opt.key = this.key
-      deribit.opt.secret = this.secret
-
-      localStorage.deribit_key = this.key
-      localStorage.deribit_secret = this.secret
-
-      this.credentialsSet = true
-
-      let store = this.$store
-      deribit.connected.then(() => {
-        store.dispatch('positions')
-        deribit.hook('my_trade', () => {
-          store.dispatch('positions').then(() => this.draw())
-        })
-      })
+    isReady() {
+      return this.readyState >= 3
     },
     draw: function() {
+      if (!this.isReady()) return
+
       let data = this.data()
       this.max = Math.round(Math.max(...data.series[0].map(Math.abs)))
       this.spread = this.spread > this.max ? this.max : this.spread
@@ -123,6 +89,8 @@ export default {
       }
     },
     data: function(st) {
+      if (!this.isReady()) return
+
       let state = this.$store.state
 
       let symbol = this.symbol || 'BTC'
@@ -187,6 +155,8 @@ export default {
   },
   watch: {
     exp: function(exp) {
+      if (!this.isReady()) return
+
       if (exp === 'all') {
         this.daysExp = 30
       } else {

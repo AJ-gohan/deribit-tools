@@ -17,6 +17,13 @@ export default new Vuex.Store({
   state: {
     positions: [],
     symbol: {},
+    readyState: 0,
+    dh: {
+      active: false,
+      target: localStorage.delta_target || 0,
+      up: localStorage.delta_up || 0,
+      down: localStorage.delta_down || 0,
+    },
   },
   getters: {
     expirations: state => (all = false, symbol = 'BTC') => {
@@ -91,7 +98,7 @@ export default new Vuex.Store({
       let chain = state.symbol[symbol].opt[exp]
       return chain.strike[getters.ATM(exp, symbol)].midIV
     },
-    Straddle: (state, getters) => (exp, bidask = 'ask', symbol = 'BTC') => {
+    straddle: (state, getters) => (exp, bidask = 'ask', symbol = 'BTC') => {
       if (!getters.expirations().includes(exp)) {
         throw new Error(`Unkown expiration - ${exp}`)
       }
@@ -109,6 +116,8 @@ export default new Vuex.Store({
       return 2 * atmPrice * price + atmDiff + fee * price
     },
     delta: (state, getters) => (exp, kind = 'all', symbol = 'BTC') => {
+      if (state.readyState < 4) return null
+
       let posOptions
       let posFutures
 
@@ -150,6 +159,18 @@ export default new Vuex.Store({
     },
   },
   mutations: {
+    ready(state, level) {
+      if (level > state.readyState) {
+        state.readyState = level
+      }
+    },
+    deltaHedge(state, dh) {
+      localStorage.delta_target = dh.target
+      localStorage.delta_up = dh.up
+      localStorage.delta_down = dh.down
+
+      state.dh = dh
+    },
     getinstruments(state, r) {
       _.flow(
         _.map('baseCurrency'),
@@ -419,11 +440,15 @@ export default new Vuex.Store({
         .action('getinstruments')
         .then(r => commit('getinstruments', r))
         .then(() => {
-          return getters.symbols().map(symbol => {
-            return Promise.map(getters.expirations(false, symbol), exp => {
-              return dispatch('initExp', { exp, symbol })
+          let all = []
+
+          getters.symbols().forEach(symbol => {
+            getters.expirations(false, symbol).forEach(exp => {
+              all.push(dispatch('initExp', { exp, symbol }))
             })
           })
+
+          return Promise.all(all)
         })
     },
     async initExp({ dispatch, state, commit, getters }, { exp, symbol = 'BTC' }) {
@@ -452,12 +477,6 @@ export default new Vuex.Store({
         dispatch('updExp', { exp, symbol })
       })
     },
-    orderBookOption({ commit, dispatch }, msg) {
-      commit('orderBookOption', msg)
-      let [symbol, exp] = msg.instrument.split('-')
-      dispatch('updExp', { exp, symbol })
-    },
-
     greeks({ state, commit, getters }) {
       Object.keys(state.symbol).forEach(symbol => {
         let prices = {}
@@ -468,6 +487,7 @@ export default new Vuex.Store({
 
         commit('greeks', { symbol, prices })
       })
+      commit('ready', 4)
     },
     updExp({ commit, getters }, { exp, symbol = 'BTC' }) {
       commit('updExp', { exp, price: getters.futurePrice(exp), symbol })
@@ -476,8 +496,8 @@ export default new Vuex.Store({
       commit('updExpRange', {
         exp,
         symbol,
-        bid: getters.Straddle(exp, 'bid', symbol),
-        ask: getters.Straddle(exp, 'ask', symbol),
+        bid: getters.straddle(exp, 'bid', symbol),
+        ask: getters.straddle(exp, 'ask', symbol),
       })
     },
   },
