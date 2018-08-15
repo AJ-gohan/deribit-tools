@@ -126,7 +126,7 @@ export default {
       let state = this.$store.state
 
       let symbol = this.symbol || 'BTC'
-      let expirations = this.exp === 'all' ? this.expirations() : [this.exp]
+      let expirations = this.exp === 'all' || !this.exp ? this.expirations() : [this.exp]
 
       let allStrikes = _.flow(
         _.map(exp => this.strikes(exp)),
