@@ -113,6 +113,10 @@ export default {
       let store = this.$store
 
       deribit.connected.then(() => {
+        deribit.hook('my_trade', () => {
+          store.dispatch('positions')
+        })
+
         store.dispatch('positions').then(() => {
           dh.start()
         })
