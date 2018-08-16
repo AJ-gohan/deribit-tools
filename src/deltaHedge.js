@@ -1,4 +1,15 @@
 import store from './store'
+import deribit from './deribit'
+
+function trade(cont) {
+  let action = cont > 0 ? 'buy' : 'sell'
+
+  return deribit.action(action, {
+    instrument: 'BTC-PERPETUAL',
+    type: 'market',
+    quantity: Math.abs(cont),
+  })
+}
 
 class DeltaHedge {
   contracts(delta, price) {
@@ -19,17 +30,23 @@ class DeltaHedge {
       let currDelta = store.getters.delta()
 
       if (type === 'hedge') {
-        let { hedge_target, hedge_up, hedge_down } = store.state.dh
+        let {
+          hedge_limit_up,
+          hedge_limit_down,
+          hedge_step_up,
+          hedge_step_down,
+        } = store.state.dh
 
-        let diff = currDelta - hedge_target
-        let cont = this.contracts(diff, currPrice)
-
-        if (diff > 0 && diff > +hedge_up) {
-          console.log('removing ', -diff, -cont)
+        if (currDelta > hedge_limit_up + hedge_step_up) {
+          let diff = currDelta - hedge_limit_up
+          let cont = this.contracts(-diff, currPrice)
+          trade(cont).catch(console.log)
         }
 
-        if (diff < 0 && Math.abs(diff) > +hedge_down) {
-          console.log('adding ', -diff, -cont)
+        if (currDelta < hedge_limit_down - hedge_step_down) {
+          let diff = currDelta - hedge_limit_down
+          let cont = this.contracts(-diff, currPrice)
+          trade(cont).catch(console.log)
         }
       }
 
@@ -45,27 +62,19 @@ class DeltaHedge {
             ? Math.floor(priceDiff / builder_step)
             : Math.ceil(priceDiff / builder_step)
 
-        let newDelta = deltaStep * madeSteps + builder_delta
+        let deltaChange = deltaStep * madeSteps
+        deltaChange = builder_price > builder_zero ? deltaChange : -deltaChange
+
+        let newDelta = deltaChange + builder_delta
 
         // Check overdose
-
         newDelta = builder_delta > 0 ? Math.max(newDelta, 0) : Math.min(newDelta, 0)
 
         let diff = newDelta - currDelta
         let cont = this.contracts(diff, currPrice)
 
         if (Math.abs(diff) > Math.abs(deltaStep)) {
-          console.log('Hedging', {
-            currPrice,
-            currDelta,
-            initSteps,
-            deltaStep,
-            priceDiff,
-            madeSteps,
-            newDelta,
-            diff,
-            cont,
-          })
+          trade(cont).catch(console.log)
         }
       }
     }, 3000)

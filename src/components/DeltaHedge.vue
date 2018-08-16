@@ -3,12 +3,16 @@
     <span>
 
       <input type="radio" id="radiohedge" value="hedge" v-model="deltaType">
-      <label for="radiohedge">Hedge - </label>
-      Target: <input v-model="hedge_target" placeholder="target">
-      Step up/down: <input v-model="hedge_up" placeholder="up" v-on:blur="check()"> <input v-model="hedge_down" placeholder="down" v-on:blur="check()">
+      <label for="radiohedge">Hedge</label>
+      <br/>
+      Up: limit <input v-model="hedge_limit_up" placeholder="hedge_limit_up"> step <input v-model="hedge_step_up" placeholder="up" v-on:blur="check()">
+      <br/>
+      Down: limit <input v-model="hedge_limit_down" placeholder="hedge_limit_down"> step <input v-model="hedge_step_down" placeholder="down" v-on:blur="check()">
+      <br/>
       <br/>
       <input type="radio" id="radiobuilder" value="builder" v-model="deltaType">
-      <label for="radiobuilder">Builder - </label>
+      <label for="radiobuilder">Builder</label>
+      <br/>
       Bring {{ delta() | decimal }} delta to 0 at $<input v-model="builder_zero" placeholder="target"> gradually from ${{ price() }} every $<input v-model="builder_step" placeholder="dollars" v-on:blur="check()"> move
     </span>
     <br/>
@@ -32,9 +36,10 @@ export default {
       builder_zero: 0,
       builder_step: 0,
 
-      hedge_target: 0,
-      hedge_up: 0,
-      hedge_down: 0,
+      hedge_limit_up: 0,
+      hedge_limit_down: 0,
+      hedge_step_up: 0,
+      hedge_step_down: 0,
     }
   },
   filters: {
@@ -45,12 +50,13 @@ export default {
   mounted() {
     let dh = this.dh
 
-    this.delta_zero = dh.delta_zero || 0
-    this.delta_step = dh.delta_step || 0
+    this.hedge_limit_up = dh.hedge_limit_up || 0
+    this.hedge_limit_down = dh.hedge_limit_down || 0
+    this.hedge_step_up = dh.hedge_step_up || 0
+    this.hedge_step_down = dh.hedge_step_down || 0
 
-    this.delta_target = dh.target || 0
-    this.delta_up = dh.up || 0
-    this.delta_down = dh.down || 0
+    this.builder_zero = dh.builder_zero || 0
+    this.builder_step = dh.builder_step || 0
   },
   computed: {
     ...mapGetters(['futurePrice', 'delta', 'price']),
@@ -59,8 +65,11 @@ export default {
   methods: {
     check: function() {
       if (this.deltaType === 'hedge') {
-        this.hedge_up = Math.min(Math.max(this.hedge_up, 0.5), this.hedge_target)
-        this.hedge_down = Math.min(Math.max(this.hedge_down, 0.5), this.hedge_target)
+        this.hedge_limit_up = Math.max(this.hedge_limit_up, this.hedge_limit_down)
+        this.hedge_limit_down = Math.min(this.hedge_limit_up, this.hedge_limit_down)
+
+        this.hedge_step_up = Math.max(this.hedge_step_up, 0.1)
+        this.hedge_step_down = Math.max(this.hedge_step_down, 0.1)
       }
 
       if (this.deltaType === 'builder') {
@@ -94,12 +103,13 @@ export default {
 
         builder_delta: delta,
         builder_price: price,
-        builder_zero: this.builder_zero,
-        builder_step: this.builder_step,
+        builder_zero: +this.builder_zero,
+        builder_step: +this.builder_step,
 
-        hedge_target: +this.hedge_target,
-        hedge_up: this.hedge_up,
-        hedge_down: this.hedge_down,
+        hedge_limit_up: +this.hedge_limit_up,
+        hedge_limit_down: +this.hedge_limit_down,
+        hedge_step_up: +this.hedge_step_up,
+        hedge_step_down: +this.hedge_step_down,
       })
     },
   },

@@ -22,14 +22,15 @@ export default new Vuex.Store({
       active: false,
       type: '',
 
-      hedge_target: localStorage.delta_hedge_target || 0,
-      hedge_up: localStorage.delta_hedge_up || 0,
-      hedge_down: localStorage.delta_hedge_down || 0,
+      hedge_limit_up: 0,
+      hedge_limit_down: 0,
+      hedge_step_up: 0,
+      hedge_step_down: 0,
 
-      builder_delta: localStorage.delta_builder_delta || 0,
-      builder_price: localStorage.delta_builder_price || 0,
-      builder_zero: localStorage.delta_builder_zero || 0,
-      builder_step: localStorage.delta_builder_step || 0,
+      builder_delta: 0,
+      builder_price: 0,
+      builder_zero: 0,
+      builder_step: 0,
     },
   },
   getters: {
@@ -177,15 +178,6 @@ export default new Vuex.Store({
       }
     },
     deltaHedge(state, dh) {
-      localStorage.delta_hedge_target = dh.hedge_target
-      localStorage.delta_hedge_up = dh.hedge_up
-      localStorage.delta_hedge_down = dh.hedge_down
-
-      localStorage.delta_builder_zero = dh.builder_zero
-      localStorage.delta_builder_step = dh.builder_step
-
-      localStorage.type = dh.type
-
       state.dh = dh
     },
     getinstruments(state, r) {
