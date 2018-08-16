@@ -20,6 +20,8 @@ import DeltaHedge from './components/DeltaHedge.vue'
 
 import deribit from './deribit'
 
+import dh from './deltaHedge'
+
 const routes = [
   { path: '/pnl', component: PnL },
   { path: '/iv', component: IVCurve },
@@ -112,26 +114,7 @@ export default {
 
       deribit.connected.then(() => {
         store.dispatch('positions').then(() => {
-          // Delta hedge
-          setInterval(() => {
-            if (this.readyState < 4) return
-
-            let { active, target, up, down } = this.dh
-            if (!active) return
-
-            let price = store.getters.futurePrice('PERPETUAL')
-
-            let diff = store.getters.delta() - target
-            let cont = Math.round(diff * price / 10)
-
-            if (diff > 0 && diff > +up) {
-              console.log('removing ', -diff, -cont)
-            }
-
-            if (diff < 0 && Math.abs(diff) > +down) {
-              console.log('adding ', -diff, -cont)
-            }
-          }, 3000)
+          dh.start()
         })
       })
     },

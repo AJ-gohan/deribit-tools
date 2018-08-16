@@ -20,9 +20,16 @@ export default new Vuex.Store({
     readyState: 0,
     dh: {
       active: false,
-      target: localStorage.delta_target || 0,
-      up: localStorage.delta_up || 0,
-      down: localStorage.delta_down || 0,
+      type: '',
+
+      hedge_target: localStorage.delta_hedge_target || 0,
+      hedge_up: localStorage.delta_hedge_up || 0,
+      hedge_down: localStorage.delta_hedge_down || 0,
+
+      builder_delta: localStorage.delta_builder_delta || 0,
+      builder_price: localStorage.delta_builder_price || 0,
+      builder_zero: localStorage.delta_builder_zero || 0,
+      builder_step: localStorage.delta_builder_step || 0,
     },
   },
   getters: {
@@ -82,7 +89,12 @@ export default new Vuex.Store({
       )
     },
     futurePrice: (state, getters) => (exp, symbol = 'BTC') => {
+      if (state.readyState < 3) return null
       return state.symbol[symbol].fut[getters.futureCode(exp, symbol)].mid
+    },
+    price: state => (symbol = 'BTC') => {
+      if (state.readyState < 3) return null
+      return state.symbol[symbol].fut['PERPETUAL'].mid
     },
     ATM: (state, getters) => (exp, symbol = 'BTC') => {
       let chain = state.symbol[symbol].opt[exp]
@@ -165,9 +177,14 @@ export default new Vuex.Store({
       }
     },
     deltaHedge(state, dh) {
-      localStorage.delta_target = dh.target
-      localStorage.delta_up = dh.up
-      localStorage.delta_down = dh.down
+      localStorage.delta_hedge_target = dh.hedge_target
+      localStorage.delta_hedge_up = dh.hedge_up
+      localStorage.delta_hedge_down = dh.hedge_down
+
+      localStorage.delta_builder_zero = dh.builder_zero
+      localStorage.delta_builder_step = dh.builder_step
+
+      localStorage.type = dh.type
 
       state.dh = dh
     },
