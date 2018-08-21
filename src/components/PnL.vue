@@ -63,6 +63,7 @@ export default {
       'delta',
     ]),
     ...mapState(['readyState']),
+    ...mapState({ positionState: 'positions' }),
   },
   methods: {
     isReady() {
@@ -173,6 +174,9 @@ export default {
       this.draw()
     },
     futures: function() {
+      this.draw()
+    },
+    positionState: function() {
       this.draw()
     },
     spread: function() {
