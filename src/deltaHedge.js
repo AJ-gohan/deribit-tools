@@ -28,6 +28,7 @@ class DeltaHedge {
 
       let currPrice = store.getters.price()
       let currDelta = store.getters.delta()
+      let currFutureDelta = store.getters.delta('PERPETUAL', 'future')
 
       if (type === 'hedge') {
         let {
@@ -73,8 +74,13 @@ class DeltaHedge {
         let diff = newDelta - currDelta
         let cont = this.contracts(diff, currPrice)
 
-        if (Math.abs(diff) > Math.abs(deltaStep)) {
-          trade(cont).catch(console.log)
+        if (
+          (builder_delta > 0 && currFutureDelta < 0) ||
+          (builder_delta < 0 && currFutureDelta > 0)
+        ) {
+          if (Math.abs(diff) > Math.abs(deltaStep)) {
+            trade(cont).catch(console.log)
+          }
         }
       }
     }, 3000)
