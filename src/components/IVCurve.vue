@@ -26,8 +26,8 @@ export default {
       chartOptions: {
         fullWidth: true,
         lineSmooth: false,
-        high: 180,
-        low: 50,
+        high: 160,
+        low: 35,
         height: 800,
         chartPadding: {
           right: 40,
